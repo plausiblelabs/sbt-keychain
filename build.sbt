@@ -4,15 +4,13 @@ sbtPlugin := true
 
 organization := "coop.plausible"
 
-version := "1.0-SNAPSHOT"
+version := "1.0"
 
 scalaVersion := "2.10.3"
 
 homepage := Some(url("https://opensource.plausible.coop/src/projects/SBT/repos/sbt-keychain"))
 
 licenses := Seq("The MIT License (MIT)" -> url("http://opensource.org/licenses/mit-license.php"))
-
-resolvers += "Plausible OSS Snapshots" at "https://opensource.plausible.coop/nexus/content/repositories/snapshots"
 
 libraryDependencies ++= Seq(
   "org.specs2"              %%  "specs2"                    % "2.3.8"   % "test"
@@ -37,7 +35,7 @@ publishTo := {
   if (version.value.trim.endsWith("SNAPSHOT"))
     Some("snapshots" at nexus + "content/repositories/snapshots")
   else
-    Some("releases"  at nexus + "content/repositories/releases") // TODO: If we use deploy staging Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+    Some("releases"  at nexus + "content/repositories/releases")
 }
 
 publishMavenStyle := true
