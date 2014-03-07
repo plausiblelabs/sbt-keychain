@@ -1,10 +1,10 @@
+import sbtrelease.ReleasePlugin
+
 name := """sbt-keychain"""
 
 sbtPlugin := true
 
 organization := "coop.plausible"
-
-version := "1.0"
 
 scalaVersion := "2.10.3"
 
@@ -29,6 +29,8 @@ scalacOptions ++= Seq(
 )
 
 autoAPIMappings := true
+
+ReleasePlugin.releaseSettings
 
 publishTo := {
   val nexus = "https://opensource.plausible.coop/nexus/"
