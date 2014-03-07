@@ -48,64 +48,73 @@ object KeychainPlugin extends sbt.Plugin {
   val keychainConfig = config("keychain")
 
   /** The realm and (optional) username to be used when looking up the account in the keychain. */
-  val keychainPublishingAccount = SettingKey[KeychainAccount]("The user account to be used for publishing.")
+  val keychainAccounts = SettingKey[Seq[KeychainAccount]]("User accounts to be fetched from the keychain.")
 
-  /** A task that performs querying of the keychain */
+  /** A task that performs querying of the keychain and returns all available credentials
+    * based on the configured publishTo destination */
   val keychainCredentials = TaskKey[Seq[Credentials]]("The keychain credentials.")
 
   /**
    * Keychain plugin settings.
    */
   lazy val keychainSettings: Seq[Setting[_]] = Seq[Setting[_]](
-    keychainPublishingAccount := KeychainAccount(""),
-    keychainCredentials <<= keychainCredentialsTask(keychainPublishingAccount, publishTo in publish)
+    keychainAccounts := Seq(),
+    keychainCredentials <<= keychainCredentialsTask(keychainAccounts)
   )
 
   /**
-   * Return the credentials to be used for publishing based on
-   * the configured publishTo destination.
+   * Return the credentials to be used for publishing based on the configured publishTo destination.
    *
-   * @param account The publishing account.
-   * @param publishTarget The publishing target.
+   * @param accounts The defined accounts.
    * @return The fetched credentials, or an exception if fetching credentials failed.
    */
-  private def keychainCredentialsTask (account: SettingKey[KeychainAccount], publishTarget: SettingKey[Option[Resolver]]) = Def.task {
-    /* Verify the repository type; we only support maven repositories */
-    val resolver: Option[MavenRepository] = publishTarget.value.flatMap {
-      case m:MavenRepository => Some(m)
-      case _ => None
-    }
+  private def keychainCredentialsTask (accounts: SettingKey[Seq[KeychainAccount]]) = Def.task {
+    /* Find all valid credentials */
+    for (
+      /* Fetch credentials */
+      creds <- {
+        /* Iterate over all defined keychain accounts, collecting errors. */
+        val results = accounts.value.map { account =>
+          getAccountCredentials(account, streams.value.log)
+        }
 
-    /* If this is a maven repository, generate a repo URL, and use it to fetch the user's credentials */
-    val creds = for (
-      /* Fetch the repository */
-      repo <- resolver.toRight(FatalKeychainError(s"Repository ${publishTarget.value.get} is not a Maven repository")).right;
+        /* Report errors (side-effecting) */
+        accounts.value.view.zip(results).collect {
+          case (account, Left(error)) => (account, error)
+        }.foreach {
+          case (account, FatalKeychainError(msg)) => throw new RuntimeException("$LOG_PREFIX Credential fetch for $account failed: " + msg)
+          case (account, AccountNotFound(msg)) => streams.value.log.info(s"$LOG_PREFIX No keychain account found for $account: $msg")
+          case (account, other:KeychainError) => streams.value.log.info(s"$LOG_PREFIX Could not fetch keychain credentials for $account: ${other.message}")
+        }
 
-      /* Try parsing as a URL */
-      url <- (Try(new URL(repo.root)) match {
-        case Success(url) => Right(url)
-        case Failure(t) => Left(FatalKeychainError("Could not parse URL: " + t))
-      }).right;
-      creds <- getGitCredentials(url.getProtocol, url.getHost, account.value.realm, account.value.username, streams.value.log).right
-    ) yield creds
-
-    /* Return or error */
-    creds match {
-      case Right(c) => Seq(c)
-      case Left(err) => err match {
-        case FatalKeychainError(msg) =>
-          throw new RuntimeException("$LOG_PREFIX Credential fetch failed: " + msg)
-        case AccountNotFound(msg) =>
-          streams.value.log.info(s"$LOG_PREFIX No account found: $msg")
-          Seq()
-        case other =>
-          streams.value.log.info(s"$LOG_PREFIX Could not fetch keychain credentials: ${other.message}")
-          Seq()
+        /* Return successful results */
+        results.collect {
+          case Right(c) => c
+        }
       }
-    }
+    ) yield creds
   }
 
   /**
+   * Look up keychain credentials for the given account and target.
+   *
+   * @param account A user-declared keychain account.
+   * @param logger Task-specific logger.
+   * @return Associated credentials, or a keychain error.
+   */
+  private def getAccountCredentials (account: KeychainAccount, logger: Logger): Either[KeychainError, Credentials] = {
+    /* If this is a maven repository, generate a repo URL, and use it to fetch the user's credentials */
+    for (
+      /* Try parsing the account URL */
+      url <- (Try(new URL(account.address)) match {
+        case Success(url) => Right(url)
+        case Failure(t) => Left(FatalKeychainError("Could not parse URL: " + t))
+      }).right;
+      creds <- getGitCredentials(url.getProtocol, url.getHost, account.realm, account.username, logger).right
+    ) yield creds
+  }
+
+    /**
    * Execute the given command, returning either the string output, or a keychain error.
    *
    * @param command The command to execute.

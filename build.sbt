@@ -1,5 +1,3 @@
-import coop.plausible.sbt.keychain.{KeychainAccount, KeychainPlugin}
-
 name := """sbt-keychain"""
 
 sbtPlugin := true
@@ -33,12 +31,6 @@ scalacOptions ++= Seq(
 )
 
 autoAPIMappings := true
-
-KeychainPlugin.keychainSettings
-
-KeychainPlugin.keychainPublishingAccount := KeychainAccount("Sonatype Nexus Repository Manager")
-
-credentials <++= KeychainPlugin.keychainCredentials
 
 publishTo := {
   val nexus = "https://opensource.plausible.coop/nexus/"

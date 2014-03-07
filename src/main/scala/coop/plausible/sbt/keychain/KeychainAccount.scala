@@ -30,6 +30,7 @@ package coop.plausible.sbt.keychain
   * An account backed by the the keychain.
   *
   * @param realm The authentication realm, eg, 'Sonatype Nexus Repository Manager'.
+ *  @param address The network address, eg, 'https://nexus.example.org/'
   * @param username The username, if known.
   */
-case class KeychainAccount (realm: String, username: Option[String] = None)
+case class KeychainAccount (realm: String, address: String, username: Option[String] = None)
