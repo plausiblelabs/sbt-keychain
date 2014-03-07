@@ -1,4 +1,6 @@
-import sbtrelease.ReleasePlugin
+import sbtrelease.ReleasePlugin._
+import sbtrelease.ReleasePlugin.ReleaseKeys._
+import sbtrelease.ReleaseStateTransformations._
 
 name := """sbt-keychain"""
 
@@ -29,8 +31,6 @@ scalacOptions ++= Seq(
 )
 
 autoAPIMappings := true
-
-ReleasePlugin.releaseSettings
 
 publishTo := {
   val nexus = "https://opensource.plausible.coop/nexus/"
