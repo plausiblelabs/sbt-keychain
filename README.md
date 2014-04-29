@@ -24,7 +24,7 @@ Add the following to your `~/.sbt/0.13/plugins/gpg.sbt` file (you may need to cr
     // Required until we can submit the plugin to Maven Central
     resolvers += "Plausible OSS" at "https://opensource.plausible.coop/nexus/content/repositories/public"
 
-    addSbtPlugin("coop.plausible" %% "sbt-keychain" % "1.0")
+    addSbtPlugin("coop.plausible" %% "sbt-keychain" % "1.0.1")
 
 Configure the set of accounts to be fetched from the keychain in `~/.sbt/0.13/global.sbt`:
 
