@@ -8,7 +8,7 @@ sbtPlugin := true
 
 organization := "coop.plausible"
 
-scalaVersion := "2.10.3"
+scalaVersion := "2.10.4"
 
 homepage := Some(url("https://opensource.plausible.coop/src/projects/SBT/repos/sbt-keychain"))
 
