@@ -224,7 +224,8 @@ object KeychainPlugin extends sbt.Plugin {
         Some(s"protocol=$scheme"),
         Some(s"host=$host"),
         Some(s"realm=$realm"),
-        user.map(s => s"username=$s")
+        user.map(s => s"username=$s"),
+        Some("") /* Empty trailing line is required by git-credential-osxkeychain */
       ).flatten.mkString("\n").getBytes(StandardCharsets.UTF_8)).right;
 
       /* Execute the git-credential-$helper and parse the results */
@@ -232,7 +233,7 @@ object KeychainPlugin extends sbt.Plugin {
       parsed <- GitCredentialParser.parseInput(lines).right;
 
       /* Extract the credentials */
-      username <- parsed.get("username").toRight(AccountNotFound("No username returned in git credential output")).right;
+      username <- parsed.get("username").orElse(user).toRight(AccountNotFound("No username returned in git credential output")).right;
       password <- parsed.get("password").toRight(AccountNotFound("No password returned in git credential output")).right
     ) yield Credentials(realm, host, username, password)
   }
